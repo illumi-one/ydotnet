@@ -16,7 +16,6 @@ public static class ProtocolReadExtensions
     public static async ValueTask<BaseMessage> ReadNextMessageAsync(this Decoder decoder, CancellationToken ct)
     {
         var messageType = await decoder.ReadVarUintAsync(ct).ConfigureAwait(false);
-        var docId = await decoder.ReadVarStringAsync(ct).ConfigureAwait(false);
 
         switch (messageType)
         {
@@ -42,23 +41,24 @@ public static class ProtocolReadExtensions
     /// <exception cref="InvalidOperationException">Protocol error occurred.</exception>
     public static async ValueTask<SyncMessage> ReadSyncMessageAsync(this Decoder decoder, CancellationToken ct)
     {
+        var docId = await decoder.ReadVarStringAsync(ct).ConfigureAwait(false);
         var syncType = await decoder.ReadVarUintAsync(ct).ConfigureAwait(false);
         switch (syncType)
         {
             case SyncStep1Message.Identifier:
                 var stateVector = await decoder.ReadVarUint8ArrayAsync(ct).ConfigureAwait(false);
 
-                return new SyncStep1Message(stateVector);
+                return new SyncStep1Message(stateVector, docId);
 
             case SyncStep2Message.Identifier:
                 var syncUpdate = await decoder.ReadVarUint8ArrayAsync(ct).ConfigureAwait(false);
 
-                return new SyncStep2Message(syncUpdate);
+                return new SyncStep2Message(syncUpdate, docId);
 
             case SyncUpdateMessage.Identifier:
                 var update = await decoder.ReadVarUint8ArrayAsync(ct).ConfigureAwait(false);
 
-                return new SyncUpdateMessage(update);
+                return new SyncUpdateMessage(update, docId);
 
             default:
                 return new UnknownSyncMessage(syncType);

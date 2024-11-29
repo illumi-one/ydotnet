@@ -60,7 +60,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
                 {
                     if (state.IsSynced)
                     {
-                        var message = new SyncUpdateMessage(diff);
+                        var message = new SyncUpdateMessage(diff, @event.Context.DocumentName);
 
                         await encoder.WriteAsync(message, ct).ConfigureAwait(false);
                     }
@@ -209,10 +209,10 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
             // We mark the sync state as false again to handle multiple sync steps.
             state.IsSynced = false;
 
-            await encoder.WriteAsync(new SyncStep2Message(serverUpdate), ct).ConfigureAwait(false);
-            await encoder.WriteAsync(new SyncStep1Message(serverState), ct).ConfigureAwait(false);
+            await encoder.WriteAsync(new SyncStep2Message(serverUpdate,message.DocId), ct).ConfigureAwait(false);
+            await encoder.WriteAsync(new SyncStep1Message(serverState,message.DocId), ct).ConfigureAwait(false);
 
-            await SendPendingUpdatesAsync(encoder, state, ct).ConfigureAwait(false);
+            await SendPendingUpdatesAsync(encoder, state, ct,message.DocId).ConfigureAwait(false);
             await SendAwarenessAsync(encoder, state, ct).ConfigureAwait(false);
 
             // Sync state has been completed, therefore the client will receive normal updates now.
@@ -258,11 +258,11 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
         }
     }
 
-    private static async Task SendPendingUpdatesAsync(WebSocketEncoder encoder, ClientState state, CancellationToken ct)
+    private static async Task SendPendingUpdatesAsync(WebSocketEncoder encoder, ClientState state, CancellationToken ct, string docId)
     {
         while (state.PendingUpdates.TryDequeue(out var pendingDiff))
         {
-            var message = new SyncUpdateMessage(pendingDiff);
+            var message = new SyncUpdateMessage(pendingDiff, docId);
 
             await encoder.WriteAsync(message, ct).ConfigureAwait(false);
         }
