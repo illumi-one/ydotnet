@@ -20,6 +20,7 @@ public static class ProtocolWriteExtensions
         ArgumentNullException.ThrowIfNull(message);
 
         await encoder.WriteVarUintAsync(SyncMessage.BaseIdentifier, ct).ConfigureAwait(false);
+        await encoder.WriteVarStringAsync(message.DocId, ct).ConfigureAwait(false);
         await encoder.WriteVarUintAsync(SyncStep1Message.Identifier, ct).ConfigureAwait(false);
         await encoder.WriteVarUint8Array(message.StateVector, ct).ConfigureAwait(false);
         await encoder.FlushAsync(ct).ConfigureAwait(false);
@@ -40,6 +41,7 @@ public static class ProtocolWriteExtensions
         ArgumentNullException.ThrowIfNull(message);
 
         await encoder.WriteVarUintAsync(SyncMessage.BaseIdentifier, ct).ConfigureAwait(false);
+        await encoder.WriteVarStringAsync(message.DocId, ct).ConfigureAwait(false);
         await encoder.WriteVarUintAsync(SyncStep2Message.Identifier, ct).ConfigureAwait(false);
         await encoder.WriteVarUint8Array(message.Update, ct).ConfigureAwait(false);
         await encoder.FlushAsync(ct).ConfigureAwait(false);
@@ -60,6 +62,7 @@ public static class ProtocolWriteExtensions
         ArgumentNullException.ThrowIfNull(message);
 
         await encoder.WriteVarUintAsync(SyncMessage.BaseIdentifier, ct).ConfigureAwait(false);
+        await encoder.WriteVarStringAsync(message.DocId, ct).ConfigureAwait(false);
         await encoder.WriteVarUintAsync(SyncUpdateMessage.Identifier, ct).ConfigureAwait(false);
         await encoder.WriteVarUint8Array(message.Update, ct).ConfigureAwait(false);
         await encoder.FlushAsync(ct).ConfigureAwait(false);
