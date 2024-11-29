@@ -16,6 +16,7 @@ public static class ProtocolReadExtensions
     public static async ValueTask<BaseMessage> ReadNextMessageAsync(this Decoder decoder, CancellationToken ct)
     {
         var messageType = await decoder.ReadVarUintAsync(ct).ConfigureAwait(false);
+        var docId = await decoder.ReadVarStringAsync(ct).ConfigureAwait(false);
 
         switch (messageType)
         {
@@ -42,7 +43,6 @@ public static class ProtocolReadExtensions
     public static async ValueTask<SyncMessage> ReadSyncMessageAsync(this Decoder decoder, CancellationToken ct)
     {
         var syncType = await decoder.ReadVarUintAsync(ct).ConfigureAwait(false);
-
         switch (syncType)
         {
             case SyncStep1Message.Identifier:
