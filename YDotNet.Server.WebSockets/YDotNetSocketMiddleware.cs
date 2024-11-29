@@ -60,13 +60,13 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
                 {
                     if (state.IsSynced)
                     {
-                        var message = new SyncUpdateMessage(diff);
+                        var message = new SyncUpdateMessage(diff, @event.Context.DocumentName);
 
                         await encoder.WriteAsync(message, ct).ConfigureAwait(false);
                     }
                     else
                     {
-                        state.PendingUpdates.Enqueue(@event.Diff);
+                        state.AddPendingUpdate(@event.Context.DocumentName,@event.Diff);
                     }
                 }, default).ConfigureAwait(false);
             }
@@ -96,7 +96,6 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
             while (state.Decoder.CanRead)
             {
                 var message = await state.Decoder.ReadNextMessageAsync(httpContext.RequestAborted).ConfigureAwait(false);
-
                 switch (message)
                 {
                     case SyncStep1Message sync1:
@@ -148,7 +147,6 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
         {
             Decoder = new WebSocketDecoder(webSocket),
             DocumentContext = new DocumentContext(documentName, 0),
-            DocumentName = documentName,
             Encoder = new WebSocketEncoder(webSocket),
             WebSocket = webSocket,
         };
@@ -201,7 +199,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
 
     private async Task HandleAsync(ClientState state, SyncStep1Message message, CancellationToken ct)
     {
-        await state.WriteLockedAsync(state: message, async (encoder, message, state, ct) =>
+        await state.WriteLockedAsync(message: message, async (encoder, message, state, ct) =>
         {
             var serverState = await documentManager!.GetStateVectorAsync(state.DocumentContext, ct).ConfigureAwait(false);
             var serverUpdate = await documentManager!.GetUpdateAsync(state.DocumentContext, message.StateVector, ct).ConfigureAwait(false);
@@ -209,8 +207,8 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
             // We mark the sync state as false again to handle multiple sync steps.
             state.IsSynced = false;
 
-            await encoder.WriteAsync(new SyncStep2Message(serverUpdate), ct).ConfigureAwait(false);
-            await encoder.WriteAsync(new SyncStep1Message(serverState), ct).ConfigureAwait(false);
+            await encoder.WriteAsync(new SyncStep2Message(serverUpdate,message.DocId), ct).ConfigureAwait(false);
+            await encoder.WriteAsync(new SyncStep1Message(serverState,message.DocId), ct).ConfigureAwait(false);
 
             await SendPendingUpdatesAsync(encoder, state, ct).ConfigureAwait(false);
             await SendAwarenessAsync(encoder, state, ct).ConfigureAwait(false);
@@ -222,7 +220,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
 
     private async Task HandleAsync(ClientState state, SyncStep2Message message, CancellationToken ct)
     {
-        await state.WriteLockedAsync(state: message, async (encoder, message, state, ct) =>
+        await state.WriteLockedAsync(message: message, async (encoder, message, state, ct) =>
         {
             await documentManager!.ApplyUpdateAsync(state.DocumentContext, message.Update, ct).ConfigureAwait(false);
         }, ct).ConfigureAwait(false);
@@ -230,7 +228,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
 
     private async Task HandleAsync(ClientState state, SyncUpdateMessage message, CancellationToken ct)
     {
-        await state.WriteLockedAsync(state: message, async (encoder, message, state, ct) =>
+        await state.WriteLockedAsync(message: message, async (encoder, message, state, ct) =>
         {
             await documentManager!.ApplyUpdateAsync(state.DocumentContext, message.Update, ct).ConfigureAwait(false);
         }, ct).ConfigureAwait(false);
@@ -262,7 +260,14 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
     {
         while (state.PendingUpdates.TryDequeue(out var pendingDiff))
         {
-            var message = new SyncUpdateMessage(pendingDiff);
+            var message = new SyncUpdateMessage(pendingDiff, state.DocumentContext.DocumentName);
+
+            await encoder.WriteAsync(message, ct).ConfigureAwait(false);
+        }
+        
+        while (state.PendingUpdates.TryDequeue(out var pendingDiff))
+        {
+            var message = new SyncUpdateMessage(pendingDiff, state.DocumentContext.DocumentName);
 
             await encoder.WriteAsync(message, ct).ConfigureAwait(false);
         }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using YDotNet.Server.Storage;
@@ -11,11 +12,13 @@ public sealed class MongoDocumentStorage : IDocumentStorage, IHostedService
     private readonly MongoDocumentStorageOptions options;
     private readonly IMongoClient mongoClient;
     private IMongoCollection<DocumentEntity>? collection;
+    private ILogger<MongoDocumentStorage> _logger;
 
     public Func<DateTime> Clock { get; set; } = () => DateTime.UtcNow;
 
-    public MongoDocumentStorage(IMongoClient mongoClient, IOptions<MongoDocumentStorageOptions> options)
+    public MongoDocumentStorage(IMongoClient mongoClient, IOptions<MongoDocumentStorageOptions> options, ILogger<MongoDocumentStorage> logger)
     {
+        _logger = logger;
         this.options = options.Value;
         this.mongoClient = mongoClient;
     }
@@ -51,6 +54,7 @@ public sealed class MongoDocumentStorage : IDocumentStorage, IHostedService
         }
 
         var document = await collection.Find(x => x.Id == name).FirstOrDefaultAsync(ct).ConfigureAwait(false);
+        _logger.LogDebug("Loaded document {name} with size {size}", name, document?.Data?.Length);
 
         return document?.Data;
     }
@@ -61,7 +65,7 @@ public sealed class MongoDocumentStorage : IDocumentStorage, IHostedService
         {
             return;
         }
-
+        _logger.LogDebug("Persisting document {name} with size {size}", name, doc.Length);
         await collection.UpdateOneAsync(
             x => x.Id == name,
             Builders<DocumentEntity>.Update

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using YDotNet.Document;
+using YDotNet.Document.Transactions;
 using YDotNet.Server.Internal;
 using YDotNet.Server.Storage;
 using IDocumentCallbacks = System.Collections.Generic.IEnumerable<YDotNet.Server.IDocumentCallback>;
@@ -15,6 +16,7 @@ public sealed class DefaultDocumentManager : IDocumentManager
     private readonly DocumentManagerOptions options;
     private readonly DocumentCache cache;
     private readonly CallbackInvoker callback;
+    private ILogger<DefaultDocumentManager> _logger;
 
     public DefaultDocumentManager(
         IDocumentStorage documentStorage,
@@ -22,6 +24,7 @@ public sealed class DefaultDocumentManager : IDocumentManager
         IOptions<DocumentManagerOptions> options,
         ILogger<DefaultDocumentManager> logger)
     {
+        _logger = logger;
         this.options = options.Value;
         callback = new CallbackInvoker(callbacks, logger);
 
@@ -72,11 +75,15 @@ public sealed class DefaultDocumentManager : IDocumentManager
             {
                 Diff = stateDiff,
             };
-
+            var updatHash = stateDiff.GetBase64Part();
+            
             using (var transaction = doc.WriteTransaction())
             {
+                _logger.LogTrace("ApplyingV1 update {hash} to document {name} state: {updateState}", updatHash, context.DocumentName, transaction.GetSnapshotHash());
                 result.TransactionUpdateResult = transaction.ApplyV1(stateDiff);
             }
+            
+            _logger.LogDebug("Invoking callback after Applied V1 update {hash} to document {name}.", updatHash, context.DocumentName);
 
             await callback.OnDocumentChangedAsync(new DocumentChangedEvent
             {
@@ -85,10 +92,14 @@ public sealed class DefaultDocumentManager : IDocumentManager
                 Document = doc,
                 Source = this,
             }).ConfigureAwait(false);
+            
+            _logger.LogDebug("Applied V1 update {hash} to document {name}.", updatHash, context.DocumentName);
 
             return result;
         }).ConfigureAwait(false);
     }
+
+
 
     public async ValueTask UpdateDocAsync(DocumentContext context, Action<Doc> action, CancellationToken ct = default)
     {
