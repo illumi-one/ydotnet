@@ -70,7 +70,7 @@ public record UnknownSyncMessage(ulong Identifier) : SyncMessage;
 /// <remarks>
 /// See: https://github.com/yjs/y-protocols/blob/master/sync.js.
 /// </remarks>
-public record SyncStep1Message(byte[] StateVector) : SyncMessage
+public record SyncStep1Message(byte[] StateVector, string DocId) : SyncMessage
 {
     /// <summary>
     /// Identifier for the this message.
@@ -84,7 +84,7 @@ public record SyncStep1Message(byte[] StateVector) : SyncMessage
 /// <remarks>
 /// See: https://github.com/yjs/y-protocols/blob/master/sync.js.
 /// </remarks>
-public record SyncStep2Message(byte[] Update) : SyncMessage
+public record SyncStep2Message(byte[] Update, string DocId) : SyncMessage
 {
     /// <summary>
     /// Identifier for the this message.
@@ -98,7 +98,7 @@ public record SyncStep2Message(byte[] Update) : SyncMessage
 /// <remarks>
 /// See: https://github.com/yjs/y-protocols/blob/master/sync.js#L40.
 /// </remarks>
-public record SyncUpdateMessage(byte[] Update) : SyncMessage
+public record SyncUpdateMessage(byte[] Update, string DocId) : SyncMessage
 {
     /// <summary>
     /// Identifier for the this message.

@@ -1,9 +1,46 @@
+using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using YDotNet.Document;
+using YDotNet.Document.Transactions;
 using YDotNet.Server.Storage;
 
 namespace YDotNet.Server.Internal;
 
+public static class YDocExtentions
+{
+    public static string GetHash(this byte[]? data)
+    {
+        if (data == null)
+        {
+            return string.Empty;
+        }
+
+        using SHA256 sha256 = SHA256.Create();
+        var hashBytes = sha256.ComputeHash(data);
+        return BitConverter.ToString(hashBytes).Replace("-", string.Empty).ToLowerInvariant();
+    }
+
+    public static string GetBase64Part(this byte[]? data)
+    {
+        if (data == null)
+        {
+            return string.Empty;
+        }
+
+        var base64String = Convert.ToBase64String(data);
+        return base64String.Length > 20 ? base64String.Substring(0,20) : base64String;
+    }
+    
+    public static string GetSnapshotHash(this Transaction transaction)
+    {
+        return transaction.Snapshot().GetHash();
+    }
+    
+    public static string SnapshotStart(this Transaction transaction)
+    {
+        return transaction.Snapshot().GetBase64Part();
+    }
+}
 internal sealed class DocumentContainer
 {
     private readonly DocumentManagerOptions options;
@@ -58,7 +95,7 @@ internal sealed class DocumentContainer
     private async Task<Doc> LoadCoreAsync()
     {
         var documentData = await documentStorage.GetDocAsync(documentName).ConfigureAwait(false);
-
+        logger.LogDebug("Loaded  document {name} with size {size}, hash {hash}", documentName,documentData?.Length, documentData.GetBase64Part());
         if (documentData != null)
         {
             var document = new Doc();
@@ -69,7 +106,6 @@ internal sealed class DocumentContainer
                 {
                     throw new InvalidOperationException("Transaction cannot be acquired.");
                 }
-
                 transaction.ApplyV1(documentData);
             }
 
@@ -117,7 +153,7 @@ internal sealed class DocumentContainer
 
             await documentStorage.StoreDocAsync(documentName, state).ConfigureAwait(false);
 
-            logger.LogDebug("Document {documentName} with size {size} been saved.", documentName, state.Length);
+            logger.LogDebug("Document {documentName} with size {size} hash {hash} been saved.", documentName, state.Length, state.GetBase64Part());
         }
         catch (Exception ex)
         {
