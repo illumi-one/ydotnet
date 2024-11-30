@@ -69,7 +69,6 @@ internal sealed class DocumentContainer
                 {
                     throw new InvalidOperationException("Transaction cannot be acquired.");
                 }
-
                 transaction.ApplyV1(documentData);
             }
 
@@ -97,7 +96,10 @@ internal sealed class DocumentContainer
         await slimLock.WaitAsync().ConfigureAwait(false);
         try
         {
+            logger.LogDebug("before applying update to document data.");
             return await action(document).ConfigureAwait(false);
+            logger.LogDebug("after applying update to document data.");
+
         }
         finally
         {
