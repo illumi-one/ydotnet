@@ -58,7 +58,7 @@ internal sealed class DocumentContainer
     private async Task<Doc> LoadCoreAsync()
     {
         var documentData = await documentStorage.GetDocAsync(documentName).ConfigureAwait(false);
-
+        logger.LogDebug("Loaded  document {name} with size {size}", documentName,documentData?.Length);
         if (documentData != null)
         {
             var document = new Doc();
@@ -97,9 +97,9 @@ internal sealed class DocumentContainer
         try
         {
             logger.LogDebug("before applying update to document data.");
-            return await action(document).ConfigureAwait(false);
+            var t = await action(document).ConfigureAwait(false);
             logger.LogDebug("after applying update to document data.");
-
+            return t;
         }
         finally
         {
