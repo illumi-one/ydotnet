@@ -54,7 +54,7 @@ public sealed class MongoDocumentStorage : IDocumentStorage, IHostedService
         }
 
         var document = await collection.Find(x => x.Id == name).FirstOrDefaultAsync(ct).ConfigureAwait(false);
-        _logger.LogDebug("Loaded document {name} with size {size}", name, document.Data.Length);
+        _logger.LogDebug("Loaded document {name} with size {size}", name, document?.Data?.Length);
 
         return document?.Data;
     }

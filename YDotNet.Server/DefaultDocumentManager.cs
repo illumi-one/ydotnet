@@ -15,6 +15,7 @@ public sealed class DefaultDocumentManager : IDocumentManager
     private readonly DocumentManagerOptions options;
     private readonly DocumentCache cache;
     private readonly CallbackInvoker callback;
+    private ILogger<DefaultDocumentManager> _logger;
 
     public DefaultDocumentManager(
         IDocumentStorage documentStorage,
@@ -22,6 +23,7 @@ public sealed class DefaultDocumentManager : IDocumentManager
         IOptions<DocumentManagerOptions> options,
         ILogger<DefaultDocumentManager> logger)
     {
+        _logger = logger;
         this.options = options.Value;
         callback = new CallbackInvoker(callbacks, logger);
 
@@ -72,7 +74,7 @@ public sealed class DefaultDocumentManager : IDocumentManager
             {
                 Diff = stateDiff,
             };
-
+            _logger.LogDebug("ApplyingV1 update {hash} to document {name}.", context.DocumentName);
             using (var transaction = doc.WriteTransaction())
             {
                 result.TransactionUpdateResult = transaction.ApplyV1(stateDiff);

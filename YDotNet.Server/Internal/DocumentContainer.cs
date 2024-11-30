@@ -1,9 +1,22 @@
+using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using YDotNet.Document;
 using YDotNet.Server.Storage;
 
 namespace YDotNet.Server.Internal;
 
+public static class YDocExtentions
+{
+    public static string CalculateHashSum(this byte[]? data)
+    {
+        if(data == null) return string.Empty;
+        using (SHA256 sha256 = SHA256.Create())
+        {
+            byte[] hashBytes = sha256.ComputeHash(data);
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+        }
+    }
+}
 internal sealed class DocumentContainer
 {
     private readonly DocumentManagerOptions options;
@@ -58,7 +71,7 @@ internal sealed class DocumentContainer
     private async Task<Doc> LoadCoreAsync()
     {
         var documentData = await documentStorage.GetDocAsync(documentName).ConfigureAwait(false);
-        logger.LogDebug("Loaded  document {name} with size {size}", documentName,documentData?.Length);
+        logger.LogDebug("Loaded  document {name} with size {size}, hash {hash}", documentName,documentData?.Length, documentData.CalculateHashSum());
         if (documentData != null)
         {
             var document = new Doc();
@@ -119,7 +132,7 @@ internal sealed class DocumentContainer
 
             await documentStorage.StoreDocAsync(documentName, state).ConfigureAwait(false);
 
-            logger.LogDebug("Document {documentName} with size {size} been saved.", documentName, state.Length);
+            logger.LogDebug("Document {documentName} with size {size} hash {hash} been saved.", documentName, state.Length, state.CalculateHashSum());
         }
         catch (Exception ex)
         {
