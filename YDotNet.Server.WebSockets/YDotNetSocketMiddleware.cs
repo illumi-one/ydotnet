@@ -66,7 +66,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
                     }
                     else
                     {
-                        state.PendingUpdates.Enqueue(new PendingUpdate(@event.Context.DocumentName,@event.Diff));
+                        state.AddPendingUpdate(@event.Context.DocumentName,@event.Diff);
                     }
                 }, default).ConfigureAwait(false);
             }
@@ -96,7 +96,6 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
             while (state.Decoder.CanRead)
             {
                 var message = await state.Decoder.ReadNextMessageAsync(httpContext.RequestAborted).ConfigureAwait(false);
-
                 switch (message)
                 {
                     case SyncStep1Message sync1:
@@ -261,7 +260,14 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
     {
         while (state.PendingUpdates.TryDequeue(out var pendingDiff))
         {
-            var message = new SyncUpdateMessage(pendingDiff.Update,pendingDiff.DocId);
+            var message = new SyncUpdateMessage(pendingDiff, state.DocumentContext.DocumentName);
+
+            await encoder.WriteAsync(message, ct).ConfigureAwait(false);
+        }
+        
+        while (state.PendingUpdates.TryDequeue(out var pendingDiff))
+        {
+            var message = new SyncUpdateMessage(pendingDiff, state.DocumentContext.DocumentName);
 
             await encoder.WriteAsync(message, ct).ConfigureAwait(false);
         }
