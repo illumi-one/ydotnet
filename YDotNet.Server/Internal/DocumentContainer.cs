@@ -133,10 +133,7 @@ internal sealed class DocumentContainer
         await slimLock.WaitAsync().ConfigureAwait(false);
         try
         {
-            logger.LogDebug("before applying update to document data.");
-            var t = await action(document).ConfigureAwait(false);
-            logger.LogDebug("after applying update to document data.");
-            return t;
+            return await action(document).ConfigureAwait(false);
         }
         finally
         {
