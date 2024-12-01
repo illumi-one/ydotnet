@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using YDotNet.Document;
+using YDotNet.Document.Transactions;
 using YDotNet.Server.Storage;
 
 namespace YDotNet.Server.Internal;
@@ -15,6 +16,10 @@ public static class YDocExtentions
             byte[] hashBytes = sha256.ComputeHash(data);
             return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
         }
+    }
+    public static string SnapshotStart(this Transaction transaction)
+    {
+        return Convert.ToBase64String(transaction.Snapshot()).Substring(0,20);
     }
 }
 internal sealed class DocumentContainer

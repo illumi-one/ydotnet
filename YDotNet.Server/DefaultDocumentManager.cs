@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using YDotNet.Document;
+using YDotNet.Document.Transactions;
 using YDotNet.Server.Internal;
 using YDotNet.Server.Storage;
 using IDocumentCallbacks = System.Collections.Generic.IEnumerable<YDotNet.Server.IDocumentCallback>;
@@ -74,11 +75,16 @@ public sealed class DefaultDocumentManager : IDocumentManager
             {
                 Diff = stateDiff,
             };
-            _logger.LogDebug("ApplyingV1 update {hash} to document {name}.", context.DocumentName);
+            var calculateHashSum = stateDiff.CalculateHashSum();
+            _logger.LogTrace("ApplyingV1 update {hash} to document {name}.\n update: {hash} state: {updateState}", calculateHashSum, context.DocumentName, calculateHashSum, stateDiff.CalculateHashSum());
+            
             using (var transaction = doc.WriteTransaction())
             {
+                _logger.LogTrace("document {name} state: {docState} ", context.DocumentName, transaction.SnapshotStart());
                 result.TransactionUpdateResult = transaction.ApplyV1(stateDiff);
             }
+            
+            _logger.LogDebug("Invoking callback after Applied V1 update {hash} to document {name}.", calculateHashSum, context.DocumentName);
 
             await callback.OnDocumentChangedAsync(new DocumentChangedEvent
             {
@@ -87,10 +93,14 @@ public sealed class DefaultDocumentManager : IDocumentManager
                 Document = doc,
                 Source = this,
             }).ConfigureAwait(false);
+            
+            _logger.LogDebug("Applied V1 update {hash} to document {name}.", calculateHashSum, context.DocumentName);
 
             return result;
         }).ConfigureAwait(false);
     }
+
+
 
     public async ValueTask UpdateDocAsync(DocumentContext context, Action<Doc> action, CancellationToken ct = default)
     {
