@@ -148,7 +148,6 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
         {
             Decoder = new WebSocketDecoder(webSocket),
             DocumentContext = new DocumentContext(documentName, 0),
-            DocumentName = documentName,
             Encoder = new WebSocketEncoder(webSocket),
             WebSocket = webSocket,
         };
