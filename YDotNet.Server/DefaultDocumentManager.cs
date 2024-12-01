@@ -75,16 +75,15 @@ public sealed class DefaultDocumentManager : IDocumentManager
             {
                 Diff = stateDiff,
             };
-            var calculateHashSum = stateDiff.CalculateHashSum();
-            _logger.LogTrace("ApplyingV1 update {hash} to document {name}.\n update: {hash} state: {updateState}", calculateHashSum, context.DocumentName, calculateHashSum, stateDiff.CalculateHashSum());
+            var updatHash = stateDiff.GetBase64Part();
             
             using (var transaction = doc.WriteTransaction())
             {
-                _logger.LogTrace("document {name} state: {docState} ", context.DocumentName, transaction.SnapshotStart());
+                _logger.LogTrace("ApplyingV1 update {hash} to document {name} state: {updateState}", updatHash, context.DocumentName, transaction.GetSnapshotHash());
                 result.TransactionUpdateResult = transaction.ApplyV1(stateDiff);
             }
             
-            _logger.LogDebug("Invoking callback after Applied V1 update {hash} to document {name}.", calculateHashSum, context.DocumentName);
+            _logger.LogDebug("Invoking callback after Applied V1 update {hash} to document {name}.", updatHash, context.DocumentName);
 
             await callback.OnDocumentChangedAsync(new DocumentChangedEvent
             {
@@ -94,7 +93,7 @@ public sealed class DefaultDocumentManager : IDocumentManager
                 Source = this,
             }).ConfigureAwait(false);
             
-            _logger.LogDebug("Applied V1 update {hash} to document {name}.", calculateHashSum, context.DocumentName);
+            _logger.LogDebug("Applied V1 update {hash} to document {name}.", updatHash, context.DocumentName);
 
             return result;
         }).ConfigureAwait(false);
