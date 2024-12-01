@@ -4,7 +4,7 @@ using System.Security;
 
 namespace YDotNet.Server.WebSockets;
 
-public record SubDocumentContext(string DocId, Queue<byte[]> PendingUpdates, bool IsSynced);
+public record SubDocumentContext(DocumentContext Context, Queue<byte[]> PendingUpdates, bool IsSynced);
 
 public sealed class ClientState : IDisposable
 {
@@ -25,12 +25,12 @@ public sealed class ClientState : IDisposable
     public bool IsSynced { get; set; }
     public Queue<byte[]> PendingUpdates { get; } = new();
     
-    public async Task WriteLockedAsync<T>(T state, Func<WebSocketEncoder, T, ClientState, CancellationToken, Task> action, CancellationToken ct)
+    public async Task WriteLockedAsync<T>(T message, Func<WebSocketEncoder, T, ClientState, CancellationToken, Task> action, CancellationToken ct)
     {
         await slimLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            await action(Encoder, state, this, ct).ConfigureAwait(false);
+            await action(Encoder, message, this, ct).ConfigureAwait(false);
         }
         finally
         {
@@ -40,23 +40,25 @@ public sealed class ClientState : IDisposable
 
     public void AddPendingUpdate(string docId, byte[] update)
     {
-        if (docId == DocumentName)
+        if(docId == DocumentName)
         {
             PendingUpdates.Enqueue(update);
-            return;
         }
-        
-         var subDocument = AddSubDocument(docId);
-         subDocument.PendingUpdates.Enqueue(update);
+        else
+        {
+            var doc = GetSubDocument(docId);
+            doc.PendingUpdates.Enqueue(update);
+        }
     }
-    public SubDocumentContext AddSubDocument(string docId)
+    
+    public SubDocumentContext AddSubDocument(DocumentContext context)
     {
-        return _subDocuments.AddOrUpdate(docId,
-            id=>new SubDocumentContext(id,new Queue<byte[]>(),false),
+        return _subDocuments.AddOrUpdate(context.DocumentName,
+            id=>new SubDocumentContext(context,new Queue<byte[]>(),false),
             (id,ctx) => ctx);
     }
     
-    public bool TryGetSubDocument(string docId, out SubDocumentContext? subDoc)
+    private bool TryGetSubDocument(string docId, out SubDocumentContext? subDoc)
     {
         return _subDocuments.TryGetValue(docId, out subDoc);
     }
@@ -66,6 +68,25 @@ public sealed class ClientState : IDisposable
         if (DocumentName == docId) return true;
         if (SubDocuments.ContainsKey(docId)) return true;
         return false;
+    }
+
+    public SubDocumentContext GetSubDocument(string docId)
+    {
+        if (!TryGetSubDocument(docId, out var subDoc))
+            throw new InvalidOperationException($"Subdocument not found: {docId}");
+        return subDoc;
+    }
+    
+    public DocumentContext GetDocument(string docId)
+    {
+        ValidateDocument(docId);
+        if (docId == DocumentName)
+            return DocumentContext;
+        
+        if (!TryGetSubDocument(docId, out var subDoc))
+            throw new InvalidOperationException($"Subdocument not found: {docId}");
+        
+        return subDoc.Context;
     }
     
     public void ValidateDocument(string docId)

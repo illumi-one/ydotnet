@@ -199,7 +199,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
 
     private async Task HandleAsync(ClientState state, SyncStep1Message message, CancellationToken ct)
     {
-        await state.WriteLockedAsync(state: message, async (encoder, message, state, ct) =>
+        await state.WriteLockedAsync(message: message, async (encoder, message, state, ct) =>
         {
             var serverState = await documentManager!.GetStateVectorAsync(state.DocumentContext, ct).ConfigureAwait(false);
             var serverUpdate = await documentManager!.GetUpdateAsync(state.DocumentContext, message.StateVector, ct).ConfigureAwait(false);
@@ -220,7 +220,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
 
     private async Task HandleAsync(ClientState state, SyncStep2Message message, CancellationToken ct)
     {
-        await state.WriteLockedAsync(state: message, async (encoder, message, state, ct) =>
+        await state.WriteLockedAsync(message: message, async (encoder, message, state, ct) =>
         {
             await documentManager!.ApplyUpdateAsync(state.DocumentContext, message.Update, ct).ConfigureAwait(false);
         }, ct).ConfigureAwait(false);
@@ -228,7 +228,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
 
     private async Task HandleAsync(ClientState state, SyncUpdateMessage message, CancellationToken ct)
     {
-        await state.WriteLockedAsync(state: message, async (encoder, message, state, ct) =>
+        await state.WriteLockedAsync(message: message, async (encoder, message, state, ct) =>
         {
             await documentManager!.ApplyUpdateAsync(state.DocumentContext, message.Update, ct).ConfigureAwait(false);
         }, ct).ConfigureAwait(false);
