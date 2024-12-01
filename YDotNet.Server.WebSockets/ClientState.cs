@@ -46,52 +46,40 @@ public sealed class ClientState : IDisposable
         }
         else
         {
-            var doc = GetSubDocument(docId);
-            doc.PendingUpdates.Enqueue(update);
+            if (!_subDocuments.TryGetValue(docId, out var subDoc))
+                throw new InvalidOperationException($"Subdocument not found: {docId}");
+            
+            subDoc.PendingUpdates.Enqueue(update);
         }
     }
-    
-    public SubDocumentContext AddSubDocument(DocumentContext context)
-    {
-        return _subDocuments.AddOrUpdate(context.DocumentName,
-            id=>new SubDocumentContext(context,new Queue<byte[]>(),false),
-            (id,ctx) => ctx);
-    }
-    
-    private bool TryGetSubDocument(string docId, out SubDocumentContext? subDoc)
-    {
-        return _subDocuments.TryGetValue(docId, out subDoc);
-    }
 
-    public bool TryValidateDocument(string docId)
+    public DocumentContext GetOrInitDocument(string docId)
+    {
+       // ValidateDocument(docId);
+        if (docId == DocumentName)
+            return DocumentContext;
+        
+        if (_subDocuments.TryGetValue(docId, out var subDoc))
+            return subDoc.Context;
+
+        var newSubDoc =   _subDocuments.AddOrUpdate(docId,id=>
+                new SubDocumentContext(DocumentContext with { DocumentName = docId }, new Queue<byte[]>(), false),
+                (id,ctx) => ctx);
+        return newSubDoc.Context;
+    }
+    
+    
+
+    private bool IsExisting(string docId)
     {
         if (DocumentName == docId) return true;
         if (SubDocuments.ContainsKey(docId)) return true;
         return false;
     }
 
-    public SubDocumentContext GetSubDocument(string docId)
+    public void EnsureExists(string docId)
     {
-        if (!TryGetSubDocument(docId, out var subDoc))
-            throw new InvalidOperationException($"Subdocument not found: {docId}");
-        return subDoc;
-    }
-    
-    public DocumentContext GetDocument(string docId)
-    {
-        ValidateDocument(docId);
-        if (docId == DocumentName)
-            return DocumentContext;
-        
-        if (!TryGetSubDocument(docId, out var subDoc))
-            throw new InvalidOperationException($"Subdocument not found: {docId}");
-        
-        return subDoc.Context;
-    }
-    
-    public void ValidateDocument(string docId)
-    {
-       if (!TryValidateDocument(docId))
+       if (!IsExisting(docId))
            throw new InvalidOperationException($"Invalid document id: {docId}, it is neither state root doc neither a subdocument of {DocumentName}");
     }
     
