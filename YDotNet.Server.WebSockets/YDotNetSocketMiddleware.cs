@@ -66,6 +66,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
                     }
                     else
                     {
+                        throw new InvalidOperationException("Add subdocuments support into pending updates");
                         state.PendingUpdates.Enqueue(@event.Diff);
                     }
                 }, default).ConfigureAwait(false);
