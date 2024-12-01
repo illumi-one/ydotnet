@@ -66,8 +66,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
                     }
                     else
                     {
-                        throw new InvalidOperationException("Add subdocuments support into pending updates");
-                        state.PendingUpdates.Enqueue(@event.Diff);
+                        state.PendingUpdates.Enqueue(new PendingUpdate(@event.Context.DocumentName,@event.Diff));
                     }
                 }, default).ConfigureAwait(false);
             }
@@ -213,7 +212,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
             await encoder.WriteAsync(new SyncStep2Message(serverUpdate,message.DocId), ct).ConfigureAwait(false);
             await encoder.WriteAsync(new SyncStep1Message(serverState,message.DocId), ct).ConfigureAwait(false);
 
-            await SendPendingUpdatesAsync(encoder, state, ct,message.DocId).ConfigureAwait(false);
+            await SendPendingUpdatesAsync(encoder, state, ct).ConfigureAwait(false);
             await SendAwarenessAsync(encoder, state, ct).ConfigureAwait(false);
 
             // Sync state has been completed, therefore the client will receive normal updates now.
@@ -259,11 +258,11 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
         }
     }
 
-    private static async Task SendPendingUpdatesAsync(WebSocketEncoder encoder, ClientState state, CancellationToken ct, string docId)
+    private static async Task SendPendingUpdatesAsync(WebSocketEncoder encoder, ClientState state, CancellationToken ct)
     {
         while (state.PendingUpdates.TryDequeue(out var pendingDiff))
         {
-            var message = new SyncUpdateMessage(pendingDiff, docId);
+            var message = new SyncUpdateMessage(pendingDiff.Update,pendingDiff.DocId);
 
             await encoder.WriteAsync(message, ct).ConfigureAwait(false);
         }

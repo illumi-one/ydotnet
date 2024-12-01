@@ -2,6 +2,7 @@ using System.Net.WebSockets;
 
 namespace YDotNet.Server.WebSockets;
 
+public record PendingUpdate(string DocId, byte[] Update);
 public sealed class ClientState : IDisposable
 {
     private readonly SemaphoreSlim slimLock = new(1);
@@ -18,7 +19,7 @@ public sealed class ClientState : IDisposable
 
     public bool IsSynced { get; set; }
 
-    public Queue<byte[]> PendingUpdates { get; } = new Queue<byte[]>();
+    public Queue<PendingUpdate> PendingUpdates { get; } = new Queue<PendingUpdate>();
 
     public async Task WriteLockedAsync<T>(T state, Func<WebSocketEncoder, T, ClientState, CancellationToken, Task> action, CancellationToken ct)
     {
