@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Security;
+using Microsoft.Extensions.Logging;
 
 namespace YDotNet.Server.WebSockets;
 
@@ -89,5 +90,18 @@ public sealed class ClientState : IDisposable
 
         Encoder.Dispose();
         Decoder.Dispose();
+    }
+
+    public void EnchanceWithClientId(ulong clientId)
+    {
+        DocumentContext = DocumentContext with { ClientId = clientId };
+        
+        var subDocsKeys = _subDocuments.Values.ToArray();
+        foreach (var subDoc in subDocsKeys)
+        {
+            _subDocuments.TryUpdate(subDoc.Context.DocumentName,
+                subDoc with { Context = subDoc.Context with { ClientId = clientId } },
+                subDoc);
+        }
     }
 }
