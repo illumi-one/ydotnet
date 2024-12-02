@@ -120,6 +120,7 @@ public static class ProtocolWriteExtensions
         ArgumentNullException.ThrowIfNull(message);
 
         await encoder.WriteVarUintAsync(AwarenessMessage.Identifier, ct).ConfigureAwait(false);
+        await encoder.WriteVarStringAsync(message.DocId, ct).ConfigureAwait(false);
 
         var buffer = new BufferEncoder();
 
