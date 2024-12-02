@@ -41,15 +41,17 @@ public sealed class ClientState : IDisposable
 
     public void AddPendingUpdate(string docId, byte[] update)
     {
-        if(docId == DocumentName)
+        if( docId == DocumentName )
         {
             PendingUpdates.Enqueue(update);
         }
         else
         {
             if (!_subDocuments.TryGetValue(docId, out var subDoc))
+            {
                 throw new InvalidOperationException($"Subdocument not found: {docId}");
-            
+            }
+
             subDoc.PendingUpdates.Enqueue(update);
         }
     }
