@@ -38,7 +38,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
             {
                 await state.WriteLockedAsync(@event, async (encoder, e, _, ct) =>
                 {
-                    var message = new AwarenessMessage(new AwarenessInformation(e.Context.ClientId, e.ClientClock, (string?)e.ClientState));
+                    var message = new AwarenessMessage(@event.Context.DocumentName,new AwarenessInformation(e.Context.ClientId, e.ClientClock, (string?)e.ClientState));
 
                     await encoder.WriteAsync(message, ct).ConfigureAwait(false);
                 }, default).ConfigureAwait(false);
@@ -279,6 +279,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
 
         var message =
             new AwarenessMessage(
+                state.DocumentContext.DocumentName,
                 users.Select(client => new AwarenessInformation(
                     client.Key,
                     client.Value.ClientClock,

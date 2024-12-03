@@ -112,7 +112,7 @@ public record SyncUpdateMessage(byte[] Update, string DocId) : SyncMessage
 /// <remarks>
 /// See: https://github.com/yjs/y-protocols/blob/master/awareness.js.
 /// </remarks>
-public record AwarenessMessage(params AwarenessInformation[] Clients) : BaseMessage
+public record AwarenessMessage(string DocId, params AwarenessInformation[] Clients) : BaseMessage
 {
     /// <summary>
     /// Identifier for the awareness message.
