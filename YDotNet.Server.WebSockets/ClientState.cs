@@ -94,12 +94,14 @@ public sealed class ClientState : IDisposable
         Decoder.Dispose();
     }
 
-    public void EnchanceWithClientId(ulong clientId)
+    public void EnchanceWithClientId(string docId, ulong clientId)
     {
-        DocumentContext = DocumentContext with { ClientId = clientId };
-        
-        var subDocsKeys = _subDocuments.Values.ToArray();
-        foreach (var subDoc in subDocsKeys)
+        if(docId==DocumentName)
+        {
+            DocumentContext = DocumentContext with { ClientId = clientId };
+            return;
+        }
+        if (_subDocuments.TryGetValue(docId, out var subDoc))
         {
             _subDocuments.TryUpdate(subDoc.Context.DocumentName,
                 subDoc with { Context = subDoc.Context with { ClientId = clientId } },
