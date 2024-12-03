@@ -76,6 +76,7 @@ public static class ProtocolReadExtensions
     /// <exception cref="InvalidOperationException">Protocol error occurred.</exception>
     private static async Task<AwarenessMessage> ReadAwarenessMessageAsync(this Decoder decoder, CancellationToken ct)
     {
+        var docId = await decoder.ReadVarStringAsync(ct).ConfigureAwait(false);
         // This is the length of the awareness message (for whatever reason).
         await decoder.ReadVarUintAsync(ct).ConfigureAwait(false);
 
@@ -92,6 +93,6 @@ public static class ProtocolReadExtensions
             clientList.Add(new AwarenessInformation(clientId, clientClock, clientState));
         }
 
-        return new AwarenessMessage(clientList.ToArray());
+        return new AwarenessMessage(docId, clientList.ToArray());
     }
 }
