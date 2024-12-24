@@ -145,6 +145,7 @@ public sealed class YDotNetSocketMiddleware : IDocumentCallback
 
         var state = new ClientState
         {
+            UserId = "anonymous",
             Decoder = new WebSocketDecoder(webSocket),
             DocumentContext = new DocumentContext(documentName, 0),
             Encoder = new WebSocketEncoder(webSocket),
