@@ -28,6 +28,12 @@ public sealed class DocumentChangedEvent : DocumentChangeEvent
     required public byte[] Diff { get; init; }
 }
 
+public sealed class DocumentSavedEvent : DocumentEvent
+{
+    required public Doc Document { get; init; }
+    required public byte[] State { get; init; }
+}
+
 public sealed class ClientDisconnectedEvent : DocumentEvent
 {
     required public DisconnectReason Reason { get; init; }

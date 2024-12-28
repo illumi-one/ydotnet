@@ -38,6 +38,11 @@ public sealed class CallbackInvoker : IDocumentCallback
         return InvokeCallbackAsync(@event, (c, e) => c.OnAwarenessUpdatedAsync(e));
     }
 
+    public ValueTask OnDocumentSavedAsync(DocumentSavedEvent @event)
+    {
+        return InvokeCallbackAsync(@event, (c, e) => c.OnDocumentSavedAsync(e));
+    }
+
     private async ValueTask InvokeCallbackAsync<T>(T @event, Func<IDocumentCallback, T, ValueTask> action)
     {
         foreach (var callback in callbacks)

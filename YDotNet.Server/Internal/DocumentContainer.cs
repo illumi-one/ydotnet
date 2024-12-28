@@ -66,7 +66,7 @@ internal sealed class DocumentContainer
         this.options = options;
         this.logger = logger;
 
-        delayedWriter = new DelayedWriter(options.StoreDebounce, options.MaxWriteTimeInterval, WriteAsync);
+        delayedWriter = new DelayedWriter(options.StoreDebounce, options.MaxWriteTimeInterval, () => WriteAsync(documentCallback, documentManager));
 
         loadingTask = LoadInternalAsync(documentCallback, documentManager, logger);
     }
@@ -141,7 +141,7 @@ internal sealed class DocumentContainer
         }
     }
 
-    private async Task WriteAsync()
+    private async Task WriteAsync(IDocumentCallback callback, IDocumentManager manager)
     {
         var document = await loadingTask.ConfigureAwait(false);
 
@@ -152,8 +152,15 @@ internal sealed class DocumentContainer
             var state = GetStateLocked(document);
 
             await documentStorage.StoreDocAsync(documentName, state).ConfigureAwait(false);
-
             logger.LogDebug("Document {documentName} with size {size} hash {hash} been saved.", documentName, state.Length, state.GetBase64Part());
+
+            await callback.OnDocumentSavedAsync(new DocumentSavedEvent
+            {
+                Document = document,
+                Context = new DocumentContext(documentName, 0),
+                Source = manager,
+                State = state
+            }).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

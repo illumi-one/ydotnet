@@ -11,6 +11,11 @@ public interface IDocumentCallback
     {
         return default;
     }
+    
+    ValueTask OnDocumentSavedAsync(DocumentSavedEvent @event)
+    {
+        return default;
+    }
 
     ValueTask OnDocumentChangedAsync(DocumentChangedEvent @event)
     {
