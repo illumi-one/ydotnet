@@ -1,8 +1,11 @@
+using YDotNet.Document.Options;
+
 namespace YDotNet.Server;
 
 public sealed class DocumentManagerOptions
 {
     public bool AutoCreateDocument { get; set; } = true;
+    public bool EnableGCinNewDocs { get; set; } = true;
 
     public TimeSpan StoreDebounce { get; set; } = TimeSpan.FromMilliseconds(1000);
 

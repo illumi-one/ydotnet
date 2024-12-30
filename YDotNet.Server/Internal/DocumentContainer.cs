@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using YDotNet.Document;
+using YDotNet.Document.Options;
 using YDotNet.Document.Transactions;
 using YDotNet.Server.Storage;
 
@@ -98,7 +99,7 @@ internal sealed class DocumentContainer
         logger.LogDebug("Loaded  document {name} with size {size}, hash {hash}", documentName,documentData?.Length, documentData.GetBase64Part());
         if (documentData != null)
         {
-            var document = new Doc();
+            var document = CreateNewDoc();
 
             using (var transaction = document.WriteTransaction())
             {
@@ -114,10 +115,15 @@ internal sealed class DocumentContainer
 
         if (options.AutoCreateDocument)
         {
-            return new Doc();
+            return CreateNewDoc();
         }
 
         throw new InvalidOperationException("Document does not exist yet.");
+    }
+
+    private Doc CreateNewDoc()
+    {
+        return new Doc(new DocOptions { SkipGarbageCollection = !options.EnableGCinNewDocs });
     }
 
     public async Task DisposeAsync()
