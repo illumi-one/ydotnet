@@ -50,4 +50,5 @@ public enum DisconnectReason
 {
     Disconnect,
     Cleanup,
+    Evicted
 }

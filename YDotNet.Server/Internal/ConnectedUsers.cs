@@ -68,6 +68,11 @@ public sealed class ConnectedUsers
             return documentUsers.Remove(clientId);
         }
     }
+    
+    public ulong[] RemoveAll(string documentName)
+    {
+        return users.TryRemove(documentName, out var documentUsers) ? documentUsers.Keys.ToArray() : [];
+    }
 
     public IEnumerable<(ulong ClientId, string DocumentName)> Cleanup(TimeSpan maxAge)
     {

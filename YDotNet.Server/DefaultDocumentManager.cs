@@ -171,9 +171,20 @@ public sealed class DefaultDocumentManager : IDocumentManager
         await cache.RemoveEvictedItemsAsync().ConfigureAwait(false);
     }
 
-    public ValueTask EvictDocAsync(DocumentContext context, CancellationToken ct = default)
+    public async ValueTask EvictDocAsync(DocumentContext context, CancellationToken ct = default)
     {
-        return cache.EvictItem(context.DocumentName);
+        var disconnectedUsers = users.RemoveAll(context.DocumentName);
+        foreach (var clientId in disconnectedUsers)
+        {
+            await callback.OnClientDisconnectedAsync(new ClientDisconnectedEvent
+            {
+                Context = new DocumentContext(context.DocumentName, clientId),
+                Source = this,
+                Reason = DisconnectReason.Evicted,
+            }).ConfigureAwait(false);
+        }
+
+        await cache.EvictItem(context.DocumentName).ConfigureAwait(false);
     }
 
     public async ValueTask<IReadOnlyDictionary<ulong, ConnectedUser>> GetAwarenessAsync(
