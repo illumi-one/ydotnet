@@ -55,6 +55,22 @@ internal sealed class DocumentCache : IAsyncDisposable
         }
     }
 
+    public async ValueTask EvictItem(string name)
+    {
+        await slimLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            // Remove the item manually
+            if (documents.Remove(name, out var removedItem))
+            {
+                await removedItem.Document.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            slimLock.Release();
+        }
+    }
     public async Task RemoveEvictedItemsAsync()
     {
         // Keep the lock as short as possible.

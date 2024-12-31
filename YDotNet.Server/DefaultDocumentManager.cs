@@ -171,6 +171,11 @@ public sealed class DefaultDocumentManager : IDocumentManager
         await cache.RemoveEvictedItemsAsync().ConfigureAwait(false);
     }
 
+    public ValueTask EvictDocAsync(DocumentContext context, CancellationToken ct = default)
+    {
+        return cache.EvictItem(context.DocumentName);
+    }
+
     public async ValueTask<IReadOnlyDictionary<ulong, ConnectedUser>> GetAwarenessAsync(
         DocumentContext context,
         CancellationToken ct = default)

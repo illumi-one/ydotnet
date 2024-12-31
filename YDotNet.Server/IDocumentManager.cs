@@ -20,4 +20,6 @@ public interface IDocumentManager : IHostedService
     ValueTask UpdateDocAsync(DocumentContext context, Action<Doc> action, CancellationToken ct = default);
 
     ValueTask CleanupAsync(CancellationToken ct = default);
+    //for manual removal of items, for example when we restore document state from a past version
+    ValueTask EvictDocAsync(DocumentContext context, CancellationToken ct = default);
 }
