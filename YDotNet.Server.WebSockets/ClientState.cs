@@ -11,7 +11,7 @@ public sealed class ClientState : IDisposable
 {
     private readonly SemaphoreSlim slimLock = new(1);
 
-    required public string UserId { get; set; }
+    public string UserId { get; set; }
     required public WebSocket WebSocket { get; set; }
 
     required public WebSocketEncoder Encoder { get; set; }
